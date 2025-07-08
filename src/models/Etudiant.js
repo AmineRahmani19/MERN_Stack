@@ -1,12 +1,28 @@
 const mongoose = require('mongoose');
-const utilisateurSchema = require('./Utilisateur').schema;
+const Utilisateur = require('./Utilisateur');
 
 const etudiantSchema = new mongoose.Schema({
-  ...utilisateurSchema.obj,
-  numeroEtudiant: String,
-  filiere: String,
-  niveauEtude: String,
-  maxEmprunts: { type: Number, default: 3 }
+  numeroEtudiant: {
+    type: Number,
+    required: true
+  },
+  filiere: {
+    type: String,
+    trim: true,
+    required: true
+  },
+  niveauEtude: {
+    type: String,
+    trim: true,
+    required: true
+  },
+  maxEmprunts: {
+    type: Number,
+    default: 3,
+    required: true
+  }
+}, {
+  timestamps: true
 });
 
-module.exports = mongoose.model('Etudiant', etudiantSchema);
+module.exports = Utilisateur.discriminator('Etudiant', etudiantSchema);

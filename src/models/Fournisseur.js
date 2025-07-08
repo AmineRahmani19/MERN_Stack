@@ -1,12 +1,31 @@
 const mongoose = require('mongoose');
-const utilisateurSchema = require('./Utilisateur').schema;
+const Utilisateur = require('./Utilisateur');
 
 const fournisseurSchema = new mongoose.Schema({
-  ...utilisateurSchema.obj,
-  nomEntreprise: String,
-  siret: String,
-  adresseEntreprise: String,
-  contactPrincipal: String
+  
+  nomEntreprise: {
+    type: String,
+    trim: true,
+    required: true
+  },
+  siret: {
+    type: String,
+    trim: true,
+    required: true,
+    unique: true  
+  },
+  adresseEntreprise: {
+    type: String,
+    trim: true,
+    required: true
+  },
+  contactPrincipal: {
+    type: String,
+    trim: true,
+    required: true
+  }
+}, {
+  timestamps: true
 });
 
-module.exports = mongoose.model('Fournisseur', fournisseurSchema);
+module.exports = Utilisateur.discriminator('Fournisseur', fournisseurSchema);

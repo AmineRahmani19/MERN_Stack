@@ -1,11 +1,25 @@
 const mongoose = require('mongoose');
-const utilisateurSchema = require('./Utilisateur').schema;
+const Utilisateur = require('./Utilisateur');
 
+// Étendre le schéma utilisateur
 const employeSchema = new mongoose.Schema({
-  ...utilisateurSchema.obj,
-  matricule: String,
-  departement: String,
-  roleEmploye: String
+
+  matricule: {
+    type: Number,
+    required: true
+  },
+  departement: {
+    type: String,
+    trim: true,
+    required: true
+  },
+  roleEmploye: {
+    type: String,
+    trim: true,
+    required: true
+  }
+}, {
+  timestamps: true 
 });
 
-module.exports = mongoose.model('Employe', employeSchema);
+module.exports = Utilisateur.discriminator('Employe', employeSchema);
