@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const commandeFournisseurSchema = new mongoose.Schema({
   idFournisseur: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Fournisseur',
+    ref: 'Utilisateur',
     required: true
   },
   idEmploye: {

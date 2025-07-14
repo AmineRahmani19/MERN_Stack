@@ -4,9 +4,7 @@ const connectDB = require('./config/db'); // ✅ Connexion centralisée
 
 // Import des routes
 const categorieRoutes = require('./routes/CategorieRoutes');
-const etudiantRoutes = require('./routes/EtudiantRoutes');
-const employeRoutes = require('./routes/EmployeRoutes');
-const fournisseurRoutes = require('./routes/FournisseurRoutes');
+const exemplaireRoutes= require('./routes/ExemplaireRoutes');
 const pretRoutes = require('./routes/PretRoutes');
 const amendeRoutes = require('./routes/AmendeRoutes');
 const notificationRoutes = require('./routes/NotificationRoutes');
@@ -26,9 +24,8 @@ app.use(express.json());
 
 // Enregistrement des routes
 app.use('/api/categories', categorieRoutes);
-app.use('/api/etudiants', etudiantRoutes);
-app.use('/api/employes', employeRoutes);
-app.use('/api/fournisseurs', fournisseurRoutes);
+app.use('/api/exemplaires', exemplaireRoutes);
+
 app.use('/api/prets', pretRoutes);
 app.use('/api/amendes', amendeRoutes);
 app.use('/api/notifications', notificationRoutes);

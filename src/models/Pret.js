@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const pretSchema = new mongoose.Schema({
   idUtilisateur: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Etudiant',
+    ref: 'Utilisateur',
     required: true
   },
   idExemplaire: {
@@ -13,7 +13,7 @@ const pretSchema = new mongoose.Schema({
   },
   idEmploye: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employe',
+    ref: 'Utilisateur',
     required: true
   },
   dateEmprunt: {

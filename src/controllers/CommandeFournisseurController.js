@@ -1,11 +1,32 @@
+const Utilisateur = require('../models/Utilisateur');
 const CommandeFournisseur = require('../models/CommandeFournisseur');
+
+async function verifierRoleUtilisateur(id, roleAttendu) {
+  const utilisateur = await Utilisateur.findById(id);
+  return utilisateur && utilisateur.role === roleAttendu;
+}
 
 exports.createCommande = async (req, res) => {
   try {
-    const commande = await CommandeFournisseur.create(req.body);
+    const { idFournisseur, ...autresChamps } = req.body;
+
+    // Vérifie que le fournisseur est bien un utilisateur avec le rôle "fournisseur"
+    const estFournisseur = await verifierRoleUtilisateur(idFournisseur, 'fournisseur');
+    if (!estFournisseur) {
+      return res.status(400).json({
+        error: 'idFournisseur doit référencer un utilisateur avec le rôle "fournisseur".'
+      });
+    }
+
+    const commande = new CommandeFournisseur({
+      idFournisseur,
+      ...autresChamps
+    });
+
+    await commande.save();
     res.status(201).json(commande);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 

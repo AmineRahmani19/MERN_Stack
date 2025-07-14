@@ -1,13 +1,45 @@
 const Pret = require('../models/Pret');
+const Utilisateur = require('../models/Utilisateur');
+const Exemplaire = require('../models/Exemplaire');
 
 exports.createPret = async (req, res) => {
   try {
-    const pret = await Pret.create(req.body);
+    const { idUtilisateur, idEmploye, idExemplaire, dateRetourPrevue } = req.body;
+
+    // Vérifie que l'utilisateur est un étudiant
+    const utilisateur = await Utilisateur.findById(idUtilisateur);
+    if (!utilisateur || utilisateur.role !== 'etudiant') {
+      return res.status(400).json({ error: 'idUtilisateur doit référencer un utilisateur avec le rôle "etudiant".' });
+    }
+
+    // Vérifie que l'employé est un employé
+    const employe = await Utilisateur.findById(idEmploye);
+    if (!employe || employe.role !== 'employe') {
+      return res.status(400).json({ error: 'idEmploye doit référencer un utilisateur avec le rôle "employe".' });
+    }
+
+    // Optionnel : vérifier que l'exemplaire existe
+    const exemplaire = await Exemplaire.findById(idExemplaire);
+    if (!exemplaire) {
+      return res.status(400).json({ error: "L'exemplaire n'existe pas." });
+    }
+
+    // Créer le prêt
+    const pret = new Pret({
+      idUtilisateur,
+      idEmploye,
+      idExemplaire,
+      dateRetourPrevue
+    });
+
+    await pret.save();
     res.status(201).json(pret);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
+
 
 exports.getPrets = async (req, res) => {
   try {

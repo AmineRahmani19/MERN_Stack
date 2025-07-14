@@ -1,13 +1,26 @@
 const Reservation = require('../models/Reservation');
+const Utilisateur = require('../models/Utilisateur');
 
 exports.createReservation = async (req, res) => {
   try {
-    const reservation = await Reservation.create(req.body);
+    const utilisateur = await Utilisateur.findById(req.body.idUtilisateur);
+
+    if (!utilisateur) {
+      return res.status(404).json({ error: 'Utilisateur non trouvé' });
+    }
+
+    if (utilisateur.role !== 'etudiant') {
+      return res.status(400).json({ error: 'Seuls les étudiants peuvent faire des réservations.' });
+    }
+
+    const reservation = new Reservation(req.body);
+    await reservation.save();
     res.status(201).json(reservation);
-  } catch (error) {
-    res.status(400).json({ error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
+
 
 exports.getReservations = async (req, res) => {
   try {

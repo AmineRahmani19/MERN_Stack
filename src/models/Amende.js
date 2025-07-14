@@ -8,7 +8,7 @@ const amendeSchema = new mongoose.Schema({
   },
   idUtilisateur: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Etudiant',
+    ref: 'Utilisateur',
     required: true
   },
   montant: {
