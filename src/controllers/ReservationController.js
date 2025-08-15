@@ -33,13 +33,23 @@ exports.getReservations = async (req, res) => {
 
 exports.getReservationById = async (req, res) => {
   try {
-    const reservation = await Reservation.findById(req.params.id).populate('idUtilisateur idExemplaire');
-    if (!reservation) return res.status(404).json({ message: 'Reservation not found' });
+    const reservation = await Reservation.findById(req.params.id)
+      .populate('idUtilisateur idExemplaire');
+
+    if (!reservation) 
+      return res.status(404).json({ message: 'Réservation non trouvée' });
+
+    // Vérifie que l'étudiant est bien le propriétaire OU que c'est un employé
+    if (req.user.role === 'etudiant' && reservation.idUtilisateur.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Accès refusé à cette réservation.' });
+    }
+
     res.json(reservation);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
 
 exports.updateReservation = async (req, res) => {
   try {

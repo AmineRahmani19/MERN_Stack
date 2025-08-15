@@ -10,7 +10,6 @@ exports.createCommande = async (req, res) => {
   try {
     const { idFournisseur, ...autresChamps } = req.body;
 
-    // Vérifie que le fournisseur est bien un utilisateur avec le rôle "fournisseur"
     const estFournisseur = await verifierRoleUtilisateur(idFournisseur, 'fournisseur');
     if (!estFournisseur) {
       return res.status(400).json({
@@ -20,7 +19,8 @@ exports.createCommande = async (req, res) => {
 
     const commande = new CommandeFournisseur({
       idFournisseur,
-      ...autresChamps
+      ...autresChamps,
+      idEmploye: req.user.id
     });
 
     await commande.save();
@@ -32,7 +32,14 @@ exports.createCommande = async (req, res) => {
 
 exports.getCommandes = async (req, res) => {
   try {
-    const commandes = await CommandeFournisseur.find().populate('idFournisseur idEmploye');
+    let filter = {};
+    if (req.user.role === 'employe') {
+      filter = { idEmploye: req.user.id }; // l'employé voit seulement ses commandes
+    } else if (req.user.role === 'fournisseur') {
+      filter = { idFournisseur: req.user.id }; // le fournisseur voit seulement ses commandes
+    }
+
+    const commandes = await CommandeFournisseur.find(filter).populate('idFournisseur idEmploye');
     res.json(commandes);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -42,7 +49,12 @@ exports.getCommandes = async (req, res) => {
 exports.getCommandeById = async (req, res) => {
   try {
     const commande = await CommandeFournisseur.findById(req.params.id).populate('idFournisseur idEmploye');
-    if (!commande) return res.status(404).json({ message: 'Commande not found' });
+    if (!commande) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    if (commande.idEmploye.toString() !== req.user.id && commande.idFournisseur.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Accès refusé à cette commande.' });
+    }
+
     res.json(commande);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -51,8 +63,16 @@ exports.getCommandeById = async (req, res) => {
 
 exports.updateCommande = async (req, res) => {
   try {
-    const commande = await CommandeFournisseur.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!commande) return res.status(404).json({ message: 'Commande not found' });
+    const commande = await CommandeFournisseur.findById(req.params.id);
+    if (!commande) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    if (commande.idEmploye.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Seul l’employé ayant créé la commande peut la modifier.' });
+    }
+
+    Object.assign(commande, req.body);
+    await commande.save();
+
     res.json(commande);
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -61,9 +81,46 @@ exports.updateCommande = async (req, res) => {
 
 exports.deleteCommande = async (req, res) => {
   try {
-    const commande = await CommandeFournisseur.findByIdAndDelete(req.params.id);
-    if (!commande) return res.status(404).json({ message: 'Commande not found' });
-    res.json({ message: 'Commande deleted' });
+    const commande = await CommandeFournisseur.findById(req.params.id);
+    if (!commande) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    if (commande.idEmploye.toString() !== req.user.id) {
+      return res.status(403).json({ error: 'Seul l’employé ayant créé la commande peut la supprimer.' });
+    }
+
+    await commande.deleteOne();
+    res.json({ message: 'Commande supprimée avec succès.' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.suivreCommande = async (req, res) => {
+  try {
+    const commande = await CommandeFournisseur.findOne({ _id: req.params.id, idFournisseur: req.user.id })
+      .populate('idFournisseur idEmploye');
+    if (!commande) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    res.json(commande);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+exports.confirmDelivery = async (req, res) => {
+  try {
+    const commande = await CommandeFournisseur.findOne({ _id: req.params.id, idFournisseur: req.user.id });
+    if (!commande) return res.status(404).json({ message: 'Commande non trouvée' });
+
+    if (commande.statutCommande === 'livree') {
+      return res.status(400).json({ error: 'La commande a déjà été livrée.' });
+    }
+
+    commande.statutCommande = 'livree';
+    commande.dateLivraisonEffective = new Date();
+    await commande.save();
+
+    res.json(commande);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

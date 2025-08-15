@@ -2,43 +2,59 @@ const Pret = require('../models/Pret');
 const Utilisateur = require('../models/Utilisateur');
 const Exemplaire = require('../models/Exemplaire');
 
-exports.createPret = async (req, res) => {
+//emprunter= demandePret+validerPret
+
+//Demande de pret par l'etudiant
+exports.demanderPret = async (req, res) => {
   try {
-    const { idUtilisateur, idEmploye, idExemplaire, dateRetourPrevue } = req.body;
+    const { idUtilisateur, idExemplaire } = req.body;
 
     // Vérifie que l'utilisateur est un étudiant
     const utilisateur = await Utilisateur.findById(idUtilisateur);
     if (!utilisateur || utilisateur.role !== 'etudiant') {
-      return res.status(400).json({ error: 'idUtilisateur doit référencer un utilisateur avec le rôle "etudiant".' });
+      return res.status(400).json({ error: 'Seul un étudiant peut demander un prêt.' });
     }
 
-    // Vérifie que l'employé est un employé
-    const employe = await Utilisateur.findById(idEmploye);
-    if (!employe || employe.role !== 'employe') {
-      return res.status(400).json({ error: 'idEmploye doit référencer un utilisateur avec le rôle "employe".' });
-    }
-
-    // Optionnel : vérifier que l'exemplaire existe
     const exemplaire = await Exemplaire.findById(idExemplaire);
-    if (!exemplaire) {
-      return res.status(400).json({ error: "L'exemplaire n'existe pas." });
-    }
+    if (!exemplaire) return res.status(400).json({ error: "L'exemplaire n'existe pas." });
 
-    // Créer le prêt
     const pret = new Pret({
       idUtilisateur,
-      idEmploye,
       idExemplaire,
-      dateRetourPrevue
+      statutPret: 'en attente' // demande non validée
     });
 
     await pret.save();
-    res.status(201).json(pret);
+    res.status(201).json({ message: 'Demande de prêt enregistrée.', pret });
 
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 };
+
+//Validation de pret par l'employee
+exports.validerPret = async (req, res) => {
+  try {
+    const { idEmploye } = req.body; // l'employé qui valide
+    const pret = await Pret.findById(req.params.id);
+
+    if (!pret) return res.status(404).json({ message: 'Prêt non trouvé' });
+    if (pret.statutPret !== 'en attente') {
+      return res.status(400).json({ message: 'Le prêt a déjà été validé ou annulé.' });
+    }
+
+    pret.statutPret = 'en cours';
+    pret.idEmploye = idEmploye;
+    pret.dateEmprunt = new Date();
+
+    await pret.save();
+    res.json({ message: 'Prêt validé par l’employé.', pret });
+
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 
 
 exports.getPrets = async (req, res) => {
@@ -52,8 +68,15 @@ exports.getPrets = async (req, res) => {
 
 exports.getPretById = async (req, res) => {
   try {
-    const pret = await Pret.findById(req.params.id).populate('idUtilisateur idExemplaire idEmploye');
+    const pret = await Pret.findById(req.params.id)
+      .populate('idUtilisateur idExemplaire idEmploye');
     if (!pret) return res.status(404).json({ message: 'Pret not found' });
+
+    // Vérification des droits
+    if (req.user.role === 'etudiant' && pret.idUtilisateur._id.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Accès refusé : vous ne pouvez voir que vos propres prêts.' });
+    }
+
     res.json(pret);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -79,6 +102,42 @@ exports.deletePret = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+
+exports.retournerPret = async (req, res) => {
+  try {
+    const pret = await Pret.findById(req.params.id);
+    if (!pret) {
+      return res.status(404).json({ message: 'Prêt non trouvé' });
+    }
+
+    // Vérifie que le prêt est encore en cours ou en retard
+    if (pret.statutPret !== 'en cours' && pret.statutPret !== 'en retard') {
+      return res.status(400).json({ message: 'Ce prêt est déjà retourné ou marqué comme perdu.' });
+    }
+
+    // Date de retour
+    const dateRetour = new Date();
+    pret.dateRetourEffective = dateRetour;
+
+    // Déterminer le statut
+    if (dateRetour <= pret.dateRetourPrevue) {
+      pret.statutPret = 'retourne';
+    } else {
+      pret.statutPret = 'en retard';
+    }
+
+    await pret.save();
+
+    res.json({
+      message: 'Prêt mis à jour avec le retour.',
+      pret
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 
 
 

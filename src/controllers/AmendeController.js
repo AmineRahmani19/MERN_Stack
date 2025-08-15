@@ -56,6 +56,12 @@ exports.getAmendeById = async (req, res) => {
   try {
     const amende = await Amende.findById(req.params.id).populate('idPret idUtilisateur');
     if (!amende) return res.status(404).json({ message: 'Amende not found' });
+
+    // Vérification des droits pour l'étudiant
+    if (req.user.role === 'etudiant' && amende.idUtilisateur._id.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Accès refusé : vous ne pouvez voir que vos propres amendes.' });
+    }
+
     res.json(amende);
   } catch (error) {
     res.status(500).json({ error: error.message });

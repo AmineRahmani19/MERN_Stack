@@ -16,6 +16,8 @@ const pretSchema = new mongoose.Schema({
     ref: 'Utilisateur',
     required: true
   },
+
+  //date à laquelle l’utilisateur prend réellement le livre
   dateEmprunt: {
     type: Date,
     required: true,
@@ -31,8 +33,14 @@ const pretSchema = new mongoose.Schema({
   },
   statutPret: {
     type: String,
-    enum: ['en cours', 'retourne', 'en retard', 'perdu'],
-    default: 'en cours',
+    enum: ['en attente','en cours', 'retourne', 'en retard', 'perdu'],
+    default: 'en attente',  // demande d'emprunt non encore validée
+    /*
+    'en attente' = l’étudiant a demandé l’emprunt, mais l’employé n’a pas encore validé.
+
+    'en cours' = prêt validé par l’employé.
+
+    */
     required: true
   }
 }, {
