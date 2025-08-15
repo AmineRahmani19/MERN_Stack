@@ -1,4 +1,5 @@
 const express = require('express');
+const cors = require('cors');
 require('dotenv').config();
 const connectDB = require('./config/db'); // ✅ Connexion centralisée
 
@@ -15,17 +16,22 @@ const livreRoutes = require('./routes/LivreRoutes');
 const utilisateurRoutes = require('./routes/UtilisateurRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 connectDB();
 
-// ✅ Middleware nécessaire pour lire le JSON envoyé par Postman
+// ✅ Middleware nécessaire pour lire le JSON
 app.use(express.json());
 
-// Enregistrement des routes
+// ✅ Middleware CORS placé avant les routes
+app.use(cors({
+  origin: 'http://localhost:5173',
+  credentials: true
+}));
+
+// ✅ Enregistrement des routes
 app.use('/api/categories', categorieRoutes);
 app.use('/api/exemplaires', exemplaireRoutes);
-
 app.use('/api/prets', pretRoutes);
 app.use('/api/amendes', amendeRoutes);
 app.use('/api/notifications', notificationRoutes);
@@ -35,12 +41,12 @@ app.use('/api/lignes-commande-fournisseur', ligneCommandeFournisseurRoutes);
 app.use('/api/livres', livreRoutes);
 app.use('/api/utilisateurs', utilisateurRoutes);
 
-// Test route
+// ✅ Route de test
 app.get('/', (req, res) => {
   res.send('Bienvenue à l\'API de gestion de bibliothèque');
 });
 
-// Lancement serveur
+// ✅ Lancement du serveur
 app.listen(PORT, () => {
   console.log(`✅ Serveur démarré sur le port ${PORT}`);
 });
